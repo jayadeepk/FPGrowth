@@ -1,6 +1,12 @@
 import scala.collection.mutable.{HashMap, ListBuffer}
 
 object FPGrowth {
+  def cleanTransaction(transaction: ListBuffer[String], items: Map[String, Int]): ListBuffer[String] = {
+    // Remove infrequent items from transactions
+    val cleanedTransaction = ListBuffer[String]() ++ transaction.filter(items.contains)
+    cleanedTransaction
+  }
+
   def findFrequentItemsets(transactionsPath: String, minSupport: Int): Unit = {
 
     // Get transactions from csv
@@ -20,6 +26,12 @@ object FPGrowth {
         groupBy identity
         mapValues { _.size }
         filter { _._2 >= minSupport }
+    )
+
+    // Clean transactions
+    val cleanedTransactions = ListBuffer[ListBuffer[String]]()
+    transactions.foreach(
+      cleanedTransactions += cleanTransaction(_, items)
     )
   }
 }
