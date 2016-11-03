@@ -1,4 +1,4 @@
-import scala.collection.mutable.{HashMap, ListBuffer}
+import scala.collection.mutable.ListBuffer
 
 object FPGrowth {
   def cleanTransaction(transaction: ListBuffer[String], items: Map[String, Int]): ListBuffer[String] = {
@@ -33,5 +33,11 @@ object FPGrowth {
     transactions.foreach(
       cleanedTransactions += cleanTransaction(_, items)
     )
+
+    val master = new FPTree()
+
+    for (transaction <- cleanedTransactions) {
+      master.add(transaction)
+    }
   }
 }
