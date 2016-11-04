@@ -7,8 +7,25 @@ object FPGrowth {
     cleanedTransaction
   }
 
-  def findFrequentItemsets(transactionsPath: String, minSupport: Int): Unit = {
+  def findWithSuffix(tree: FPTree, suffix: ListBuffer[String], minSupport: Int): ListBuffer[ListBuffer[String]] = {
+    val itemsets = ListBuffer[ListBuffer[String]]()
+    for (itemNodes <- tree.items()) {
+      val item = itemNodes._1
+      val nodes = itemNodes._2
+      val support = nodes.map(_.count).sum
 
+      if (support >= minSupport && !suffix.contains(item)) {
+        itemsets += item +: suffix
+
+        val condTree = conditionalTree(tree.prefixPaths(Option(item)))
+        itemsets ++= findWithSuffix(condTree, item +: suffix, minSupport)
+      }
+    }
+    itemsets
+  }
+
+  def findFrequentItemsets(transactionsPath: String, minSupport: Int): ListBuffer[ListBuffer[String]] = {
+    val itemsets = ListBuffer[ListBuffer[String]]()
     // Get transactions from csv
     val csv = io.Source.fromFile(transactionsPath)
     val transactions = ListBuffer[ListBuffer[String]]()
@@ -39,5 +56,45 @@ object FPGrowth {
     for (transaction <- cleanedTransactions) {
       master.add(transaction)
     }
+
+    itemsets ++ findWithSuffix(master, ListBuffer[String](), minSupport)
+  }
+
+  def conditionalTree(paths: ListBuffer[ListBuffer[FPNode]]): FPTree = {
+    val tree = new FPTree()
+    var conditionItem: Option[String] = None
+
+    for (path <- paths) {
+      if (conditionItem.isEmpty) {
+        conditionItem = path.last.item
+      }
+
+      var point = tree.root
+      for (node <- path) {
+        var nextPoint = point.search(node.item.get)
+        if (nextPoint.isEmpty) {
+          val count = if(node.item == conditionItem) node.count else 0
+          nextPoint = Option(FPNode(tree, node.item, Option(point), count))
+          tree.updateRoute(nextPoint.get)
+        }
+        point = nextPoint.get
+      }
+    }
+
+    if (conditionItem.isEmpty) {
+      throw new Exception("conditionItem is empty.")
+    }
+
+    for (path <- tree.prefixPaths(conditionItem)) {
+      val count = path.last.count
+      for (node <- path.dropRight(1)) {
+        node.count += count
+      }
+    }
+    tree
+  }
+
+  def main(args: Array[String]): Unit = {
+    findFrequentItemsets("res/data.csv", 2) sortBy (_.head) foreach println
   }
 }
