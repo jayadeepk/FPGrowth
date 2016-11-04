@@ -49,7 +49,7 @@ case class FPNode(var tree: FPTree, var item: Option[String],
   }
 
   def inspect(depth: Int = 0): Unit = {
-    println(" " * depth + repr())
+    println("  " * depth + repr())
     children.foreach(_._2.inspect(depth+1))
   }
 
@@ -58,7 +58,7 @@ case class FPNode(var tree: FPTree, var item: Option[String],
       "<root>"
     }
     else {
-      s"<$item ($count)>"
+      item.get + "(" + count + ")"
     }
   }
 }

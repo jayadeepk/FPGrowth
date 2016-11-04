@@ -1,11 +1,52 @@
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 object FPGrowth {
-  def cleanTransaction(transaction: ListBuffer[String], items: Map[String, Int]): ListBuffer[String] = {
-    // Remove infrequent items from transactions
-    val cleanedTransaction = ListBuffer[String]() ++ transaction.filter(items.contains)
-    cleanedTransaction
+
+  def main(args: Array[String]): Unit = {
+    val startTime = System.nanoTime()
+    for (freqItemset <- findFrequentItemsets("res/data.csv", 2).sortBy(_.head)) {
+      //print("(" + freqItemset.mkString(",") + ") ")
+    }
+    val endTime = System.nanoTime()
+    println("\nElapsed time: " + (endTime - startTime)/1000000 + "ms")
   }
+
+
+  def findFrequentItemsets(transactionsPath: String, minSupport: Int): ListBuffer[ListBuffer[String]] = {
+    val itemsets = ListBuffer[ListBuffer[String]]()
+    val items = mutable.Map[String, Int]()
+
+    // Get transactions from csv
+    var csv = io.Source.fromFile(transactionsPath)
+
+    // Iterate line by line instead of reading whole file
+    for (line <- csv.getLines) {
+      for (item <- line.split(",")) {
+        if (items.contains(item))
+          items(item) += 1
+        else
+          items(item) = 1
+      }
+    }
+
+    // Create item support map and populate with frequent 1-itemsets
+    val frequentItems = items filter ( _._2 >= minSupport )
+
+    // Add filtered and sorted transactions to master FPTree
+    val master = new FPTree()
+    csv = io.Source.fromFile(transactionsPath)
+    for (line <- csv.getLines) {
+      master.addTransaction(
+        line.split(",").toList
+            .filter(frequentItems.contains)
+            .sortBy(-frequentItems(_)))
+    }
+//    itemsets ++= findWithSuffix(master, ListBuffer[String](), minSupport)
+    master.inspect()
+    itemsets
+  }
+
 
   def findWithSuffix(tree: FPTree, suffix: ListBuffer[String], minSupport: Int): ListBuffer[ListBuffer[String]] = {
     val itemsets = ListBuffer[ListBuffer[String]]()
@@ -24,41 +65,6 @@ object FPGrowth {
     itemsets
   }
 
-  def findFrequentItemsets(transactionsPath: String, minSupport: Int): ListBuffer[ListBuffer[String]] = {
-    val itemsets = ListBuffer[ListBuffer[String]]()
-    // Get transactions from csv
-    val csv = io.Source.fromFile(transactionsPath)
-    val transactions = ListBuffer[ListBuffer[String]]()
-    for (line <- csv.getLines) {
-      val transaction = ListBuffer[String]()
-      for (col <- line.split(",")) {
-        transaction += col
-      }
-      transactions += transaction
-    }
-
-    // Create item support map and populate with frequent 1-itemsets
-    val items: Map[String, Int] = Map[String, Int]() ++ (
-      transactions.flatten
-        groupBy identity
-        mapValues { _.size }
-        filter { _._2 >= minSupport }
-    )
-
-    // Clean transactions
-    val cleanedTransactions = ListBuffer[ListBuffer[String]]()
-    transactions.foreach(
-      cleanedTransactions += cleanTransaction(_, items)
-    )
-
-    val master = new FPTree()
-
-    for (transaction <- cleanedTransactions) {
-      master.add(transaction)
-    }
-
-    itemsets ++ findWithSuffix(master, ListBuffer[String](), minSupport)
-  }
 
   def conditionalTree(paths: ListBuffer[ListBuffer[FPNode]]): FPTree = {
     val tree = new FPTree()
@@ -73,7 +79,7 @@ object FPGrowth {
       for (node <- path) {
         var nextPoint = point.search(node.item.get)
         if (nextPoint.isEmpty) {
-          val count = if(node.item == conditionItem) node.count else 0
+          val count = if (node.item == conditionItem) node.count else 0
           nextPoint = Option(FPNode(tree, node.item, Option(point), count))
           tree.updateRoute(nextPoint.get)
         }
@@ -92,9 +98,5 @@ object FPGrowth {
       }
     }
     tree
-  }
-
-  def main(args: Array[String]): Unit = {
-    findFrequentItemsets("res/data.csv", 2) sortBy (_.head) foreach println
   }
 }

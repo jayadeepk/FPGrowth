@@ -3,10 +3,9 @@ import scala.collection.mutable.ListBuffer
 
 class FPTree {
   var root: FPNode = FPNode(this, None, None)
-  var route = None: Option[(FPNode, FPNode)]
   val routes: mutable.Map[Option[String], (FPNode, FPNode)] = mutable.Map.empty
 
-  def add(transaction: ListBuffer[String]): Unit = {
+  def addTransaction(transaction: List[String]): Unit = {
     var point = root
     var nextPoint = root
 
@@ -27,9 +26,9 @@ class FPTree {
     if (point.tree != this) {
       throw new IllegalArgumentException("Given point is not from the current tree.")
     }
-    if (routes.contains(point.item)) {
+    if (point.item.isDefined && routes.contains(point.item)) {
       routes(point.item)._2.neighbour = Option(point)
-      routes(point.item) = (route.get._1, point)
+      routes(point.item) = (routes(point.item)._1, point)
     }
     else {
       // First node for this item; start a new route
@@ -76,10 +75,11 @@ class FPTree {
     root.inspect(1)
     println("\nRoutes:")
     for (itemNodes <- this.items()) {
-      println(s"  $itemNodes._1")
+      print("  " + itemNodes._1 + ": ")
       for (node <- itemNodes._2) {
-        println(s"    $node.repr()")
+        print(node.repr() + " ")
       }
+      println()
     }
   }
 }
