@@ -1,20 +1,23 @@
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
+import scala.math.Ordering.Implicits._
 
 object FPGrowth {
 
   def main(args: Array[String]): Unit = {
     val startTime = System.nanoTime()
-    for (freqItemset <- findFrequentItemsets("res/data.csv", 2).sortBy(_.head)) {
-      //print("(" + freqItemset.mkString(",") + ") ")
-    }
+    val frequentItemsets = findFrequentItemsets("res/data.csv", 4)
     val endTime = System.nanoTime()
-    println("\nElapsed time: " + (endTime - startTime)/1000000 + "ms")
+    println("Elapsed time: " + (endTime - startTime)/1000000 + "ms\n")
+
+    for (freqItemset <- frequentItemsets.sortBy(_._1)) {
+      println("(" + freqItemset._1.mkString(",") + ") " + freqItemset._2)
+    }
   }
 
 
-  def findFrequentItemsets(transactionsPath: String, minSupport: Int): ListBuffer[ListBuffer[String]] = {
-    val itemsets = ListBuffer[ListBuffer[String]]()
+  def findFrequentItemsets(transactionsPath: String, minSupport: Int): ListBuffer[(ListBuffer[String], Int)] = {
+    val itemsets = ListBuffer[(ListBuffer[String], Int)]()
     val items = mutable.Map[String, Int]()
 
     // Get transactions from csv
@@ -42,21 +45,21 @@ object FPGrowth {
             .filter(frequentItems.contains)
             .sortBy(-frequentItems(_)))
     }
-//    itemsets ++= findWithSuffix(master, ListBuffer[String](), minSupport)
-    master.inspect()
+    itemsets ++= findWithSuffix(master, ListBuffer[String](), minSupport)
+//    master.inspect()
     itemsets
   }
 
 
-  def findWithSuffix(tree: FPTree, suffix: ListBuffer[String], minSupport: Int): ListBuffer[ListBuffer[String]] = {
-    val itemsets = ListBuffer[ListBuffer[String]]()
+  def findWithSuffix(tree: FPTree, suffix: ListBuffer[String], minSupport: Int): ListBuffer[(ListBuffer[String], Int)] = {
+    val itemsets = ListBuffer[(ListBuffer[String], Int)]()
     for (itemNodes <- tree.items()) {
       val item = itemNodes._1
       val nodes = itemNodes._2
       val support = nodes.map(_.count).sum
 
       if (support >= minSupport && !suffix.contains(item)) {
-        itemsets += item +: suffix
+        itemsets += Tuple2(item +: suffix, support)
 
         val condTree = conditionalTree(tree.prefixPaths(Option(item)))
         itemsets ++= findWithSuffix(condTree, item +: suffix, minSupport)
@@ -79,7 +82,7 @@ object FPGrowth {
       for (node <- path) {
         var nextPoint = point.search(node.item.get)
         if (nextPoint.isEmpty) {
-          val count = if (node.item == conditionItem) node.count else 0
+          val count: Int = if (node.item == conditionItem) node.count else 0
           nextPoint = Option(FPNode(tree, node.item, Option(point), count))
           tree.updateRoute(nextPoint.get)
         }

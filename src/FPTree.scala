@@ -65,7 +65,7 @@ class FPTree {
         path += n.get
         n = n.get.parent
       }
-      paths += path
+      paths += path.reverse
     }
     paths
   }
