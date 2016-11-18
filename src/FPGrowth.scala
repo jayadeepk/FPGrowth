@@ -6,7 +6,7 @@ object FPGrowth {
 
   def main(args: Array[String]): Unit = {
     val startTime = System.nanoTime()
-    val frequentItemsets = findFrequentItemsets("res/data.csv", 4)
+    val frequentItemsets = findFrequentItemsets("res/data.csv", 3)
     val endTime = System.nanoTime()
     println("Elapsed time: " + (endTime - startTime)/1000000 + "ms\n")
 
@@ -43,7 +43,7 @@ object FPGrowth {
       master.addTransaction(
         line.split(",").toList
             .filter(frequentItems.contains)
-            .sortBy(-frequentItems(_)))
+            .sortBy(x => (-frequentItems(x), x.toInt)))
     }
     itemsets ++= findWithSuffix(master, ListBuffer[String](), minSupport)
 //    master.inspect()

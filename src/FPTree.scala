@@ -60,10 +60,10 @@ class FPTree {
     val paths = ListBuffer[ListBuffer[FPNode]]()
     for (node <- this.nodes(item)) {
       var path = ListBuffer[FPNode]()
-      var n = Option(node)
-      while (n.isDefined && !n.get.root) {
-        path += n.get
-        n = n.get.parent
+      var n = node
+      while (!n.root) {
+        path += n
+        n = n.parent.get
       }
       paths += path.reverse
     }
