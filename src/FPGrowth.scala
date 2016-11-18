@@ -40,10 +40,16 @@ object FPGrowth {
     val master = new FPTree()
     csv = io.Source.fromFile(transactionsPath)
     for (line <- csv.getLines) {
-      master.addTransaction(
-        line.split(",").toList
-            .filter(frequentItems.contains)
-            .sortBy(x => (-frequentItems(x), x.toInt)))
+      val transaction = line.split(",").toList
+        .filter(frequentItems.contains)
+        .sortBy(x => (-frequentItems(x), x.toInt))
+
+//      val transaction = line.split(",").toList  // Test fails for this transaction
+//        .filter(frequentItems.contains)
+//        .sortBy(-frequentItems(_))
+
+      master.addTransaction(transaction)
+
     }
     itemsets ++= findWithSuffix(master, ListBuffer[String](), minSupport)
 //    master.inspect()

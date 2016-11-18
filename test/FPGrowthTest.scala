@@ -7,15 +7,16 @@ import scala.math.Ordering.Implicits._
 object FPGrowthTest {
   def main(args: Array[String]): Unit = {
     val minSup = 2
-    val numTransactions = 20
-    val numItems = 10
+    val numTransactions = 10
+    val numItems = 5
     val numTests = 10
     var testCasesPassed = 0
+    refreshLogs()
 
-    for (i <- 0 to numTests) {
+    for (i <- 1 to numTests) {
       val data = generateData(numTransactions, numItems)
       writeData(data, "res/testdata.csv")
-      //    val data =  readData("res/testdata.csv")
+//          val data =  readData("res/testdata.csv")
 
       val freqItemsets = FPGrowth.findFrequentItemsets("res/testdata.csv", minSup)
       //    printItemsets(freqItemsets)
@@ -27,17 +28,10 @@ object FPGrowthTest {
 
       if (testPassed("res/output.txt", "res/testoutput.txt")) {
         testCasesPassed += 1
+        log(data, freqItemsets, freqItemsetsTest, i, "passed")
       }
       else {
-        for (file <- new File("test/log/").listFiles) {
-          file.delete()
-        }
-//          files <- Option(new File("test/log/").listFiles)
-//          file <- files if file.getName.endsWith(".jpg")
-//        } file.delete()
-        writeData(data, "test/log/data" + (i+1) + ".log")
-        writeItemsets(freqItemsets, "test/log/output" + (i+1) + ".log")
-        writeItemsets(freqItemsetsTest, "test/log/testoutput" + (i+1) + ".log")
+        log(data, freqItemsets, freqItemsetsTest, i, "failed")
       }
     }
     println("Test cases passed: " + testCasesPassed + "/" + numTests)
@@ -142,5 +136,25 @@ object FPGrowthTest {
       }
     }
     !failed
+  }
+
+  def refreshLogs(): Unit = {
+    for {
+          files <- Option(new File("res/logs/passed").listFiles)
+          file <- files if file.getName.endsWith(".log")
+        } file.delete()
+
+    for {
+          files <- Option(new File("res/logs/failed").listFiles)
+          file <- files if file.getName.endsWith(".log")
+        } file.delete()
+  }
+
+  def log(data: ListBuffer[ListBuffer[String]], freqItemsets: ListBuffer[(ListBuffer[String], Int)],
+          freqItemsetsTest: ListBuffer[(ListBuffer[String], Int)], i: Int, pass: String): Unit = {
+
+        writeData(data, "res/logs/" + pass + "/data" + i + ".log")
+        writeItemsets(freqItemsets, "res/logs/" + pass + "/output" + i + ".log")
+        writeItemsets(freqItemsetsTest, "res/logs/" + pass + "/testoutput" + i + ".log")
   }
 }
